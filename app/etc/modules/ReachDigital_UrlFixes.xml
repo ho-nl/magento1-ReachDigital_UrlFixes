@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) Reach Digital (http://reachdigital.nl/)
+ * See LICENSE.txt for license details.
+ */
+-->
+<config>
+    <modules>
+        <ReachDigital_UrlFixes>
+            <active>true</active>
+            <codePool>local</codePool>
+        </ReachDigital_UrlFixes>
+    </modules>
+</config>
