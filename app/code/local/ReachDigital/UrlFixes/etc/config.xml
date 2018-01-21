@@ -53,8 +53,13 @@
                     <reachdigital_urlfixes_clear_url_attributes>
                         <type>singleton</type>
                         <class>ReachDigital_UrlFixes_Model_Observer</class>
-                        <method>clearUrlAttributes</method>
+                        <method>clearProductUrlAttributes</method>
                     </reachdigital_urlfixes_clear_url_attributes>
+                    <reachdigital_urlfixes_check_url_conflicts>
+                        <type>singleton</type>
+                        <class>ReachDigital_UrlFixes_Model_Observer</class>
+                        <method>checkProductUrlConflicts</method>
+                    </reachdigital_urlfixes_check_url_conflicts>
                 </observers>
             </catalog_product_save_before>
         </events>
