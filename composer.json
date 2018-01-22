@@ -1,0 +1,19 @@
+{
+  "name": "reach-digital/magento1-urlfixes",
+  "description": "Magento 1 module to prevent and help clean up messy URL rewrites",
+  "type": "magento-module",
+  "license": "COMMERCIAL",
+  "authors": [
+    {
+      "name": "Hans Nieser",
+      "email": "hans@reachdigital.nl"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+    "magento-hackathon/magento-composer-installer": "*"
+  },
+  "extra": {
+    "magento-root-dir": "root"
+  }
+}
