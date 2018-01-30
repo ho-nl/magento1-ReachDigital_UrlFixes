@@ -1,4 +1,3 @@
 # ReachDigital_UrlFixes
 app/code/local/ReachDigital/UrlFixes/                                  app/code/local/ReachDigital/UrlFixes/
 app/etc/modules/*                                                      app/etc/modules/
-shell/*                                                                shell/

@@ -6,13 +6,10 @@ commands for detecting url_key conflicts.
 
 ## Fixes
 
-- Fixes incorrect URLs after duplicating products by clearing url_key for the new product
+- Fixes incorrect URLs after duplicating products by clearing url_key and name (default value and any store values) for
+the new product
+
 - TODO: Checks on product / category save to block products with duplicate url_keys
-
-
-## Shell commands
-
-- TODO: Command to show product and category url_key conflicts
 
 
 ## Technical notes:

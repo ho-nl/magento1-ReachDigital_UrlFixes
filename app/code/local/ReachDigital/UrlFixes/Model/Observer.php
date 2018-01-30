@@ -67,10 +67,10 @@ class ReachDigital_UrlFixes_Model_Observer extends Mage_Core_Model_Abstract
         foreach ($urlKeys as $urlKey) {
             if ($product->getStoreId() == $urlKey['store_id']) {
                 // If url key was changed for a specific store, update it with new value
-                $urlKey['store_effective_value'] = $newUrlKey;
-            } elseif ($product->getStoreId() == 0 && is_null($urlKey['store_value'])) {
+                $urlKey['store_effective_urlkey'] = $newUrlKey;
+            } elseif ($product->getStoreId() == 0 && is_null($urlKey['store_urlkey'])) {
                 // Else, if default url key value was changed, update it whereever there was no store-specific value
-                $urlKey['store_effective_value'] = $newUrlKey;
+                $urlKey['store_effective_urlkey'] = $newUrlKey;
             }
             $updatedUrlKeys[] = $urlKey;
         }
@@ -80,9 +80,9 @@ class ReachDigital_UrlFixes_Model_Observer extends Mage_Core_Model_Abstract
         if (count($conflicts)) {
             $skus = [];
             foreach ($conflicts as $conflict) {
-                $skus[] = "${conflict['sku']} in store ${conflict['store_code']}";
+                $skus[] = "${conflict['product_sku']} in store ${conflict['store_code']}";
             }
-            // TODO: We could also just revert url_key value, add a session warning and continue saving?
+            // TODO: We could also just revert url_key value, add a session warning and continue saving? Test that reverting value doesn't trigger indexing.
             throw new Exception("Unable to save product; URL key conflicts with existing product(s): " . implode(", ", $skus));
         }
     }
