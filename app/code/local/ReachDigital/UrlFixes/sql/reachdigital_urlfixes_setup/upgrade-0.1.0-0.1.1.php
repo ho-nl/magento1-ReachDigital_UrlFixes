@@ -36,6 +36,3 @@ $this->run("CREATE TABLE `$fallbackTable` (
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 COMMENT='Holds a copy old core_url_rewrite table, used to catch 404s while migrating to sanitized rewrites';");
 
 $this->endSetup();
-
-
-
