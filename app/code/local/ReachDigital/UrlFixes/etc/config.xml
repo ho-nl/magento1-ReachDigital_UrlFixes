@@ -39,15 +39,6 @@
             </reachdigital_urlfixes_setup>
         </resources>
         <events>
-            <catalog_model_product_duplicate>
-                <observers>
-                    <reachdigital_urlfixes_set_duplication_flag>
-                        <type>singleton</type>
-                        <class>ReachDigital_UrlFixes_Model_Observer</class>
-                        <method>setDuplicationFlag</method>
-                    </reachdigital_urlfixes_set_duplication_flag>
-                </observers>
-            </catalog_model_product_duplicate>
             <catalog_product_save_before>
                 <observers>
                     <reachdigital_urlfixes_clear_url_attributes>
