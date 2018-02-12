@@ -39,6 +39,15 @@
             </reachdigital_urlfixes_setup>
         </resources>
         <events>
+            <catalog_model_product_duplicate>
+                <observers>
+                    <reachdigital_urlfixes_check_store>
+                        <type>singleton</type>
+                        <class>ReachDigital_UrlFixes_Model_Observer</class>
+                        <method>checkStore</method>
+                    </reachdigital_urlfixes_check_store>
+                </observers>
+            </catalog_model_product_duplicate>
             <catalog_product_save_before>
                 <observers>
                     <reachdigital_urlfixes_clear_url_attributes>

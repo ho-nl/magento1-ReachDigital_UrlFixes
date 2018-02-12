@@ -3,6 +3,26 @@
 class ReachDigital_UrlFixes_Model_Observer extends Mage_Core_Model_Abstract
 {
     /**
+     * Check that default store is selected when duplicating. While technically it's not a problem to do this,
+     * store-specific attribute values of the product for the selected store also and up as the default (store 0)
+     * values, which can cause issues with URL key conflicts, so just don't allow it.
+     *
+     * @event catalog_model_product_duplicate
+     * @throws Exception if a store was selected
+     * @param Varien_Event_Observer $observer
+     */
+    public function checkStore(Varien_Event_Observer $observer)
+    {
+        /** @var Mage_Catalog_Model_Product $product */
+        $product = $observer->getCurrentProduct();
+
+        $storeId = $product->getStoreId();
+        if ($product->getData('_edit_mode') && $storeId != 0) {
+            throw new Exception("Unable to duplicate product at store-level. Select 'Default Values' as store view and try again.");
+        }
+    }
+
+    /**
      * Check if we're saving a duplicated product, and if so, clear url_key and product name.
      *
      * @event catalog_product_save_before
