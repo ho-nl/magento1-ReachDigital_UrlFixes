@@ -4,6 +4,28 @@ require_once 'abstract.php';
 
 class Reachdigital_UrlFixes_Shell extends Mage_Shell_Abstract
 {
+    public function testAction()
+    {
+        $conn = Mage::getSingleton('core/resource')->getConnection('core_read');
+        $fallbackTable = $conn->getTableName('reachdigital_urlfixes_fallback');
+        $query = $conn->query(
+            "select fb.store_id, fb.request_path from `$fallbackTable` as fb
+            left join core_url_rewrite as cur on cur.store_id = fb.store_id and cur.request_path = fb.request_path
+            where cur.url_rewrite_id is null");
+
+        while ($url = $query->fetch()) {
+            $oldUrl = $url['request_path'];
+            $storeId = $url['store_id'];
+            $newUrl = Mage::helper('reachdigital_urlfixes/url')->lookupFallbackRewrite($oldUrl, $storeId);
+
+            if ($newUrl) {
+                echo "Mapping $oldUrl to $newUrl for store $storeId\n";
+            } else {
+                echo "Not found: $oldUrl for store $storeId\n";
+            }
+        }
+    }
+
     public function fillFallbackTableAction()
     {
         $conn = Mage::getSingleton('core/resource')->getConnection('core_write');
@@ -17,6 +39,15 @@ class Reachdigital_UrlFixes_Shell extends Mage_Shell_Abstract
 
         echo "Copying values from $rewriteTable\n";
         $conn->query("INSERT INTO `$fallbackTable` ($columns) SELECT $columns FROM `$rewriteTable`");
+    }
+
+    /*
+     * Copy fallback rewrites back to current rewrite table. Can be used to quickly restore all URLs if for some reason
+     * the cleaned up rewrite table is causing problems (404, changed content)
+     */
+    public function restoreFallbackTableAction()
+    {
+        // TODO
     }
 
     /**
