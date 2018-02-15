@@ -8,7 +8,7 @@
 <config>
     <modules>
         <ReachDigital_UrlFixes>
-            <version>0.1.1</version>
+            <version>0.1.2</version>
         </ReachDigital_UrlFixes>
     </modules>
     <global>
@@ -62,6 +62,28 @@
                     </reachdigital_urlfixes_check_url_conflicts>
                 </observers>
             </catalog_product_save_before>
+
+            <!-- Intentionally overriding MageHost's observer so we can extend the 404 catcher logic -->
+            <controller_action_predispatch_cms_index_noroute>
+                <observers>
+                    <magehost_rewritefix>
+                        <type>singleton</type>
+                        <class>reachdigital_urlfixes/observer</class>
+                        <method>controllerActionPredispatchCmsIndexNoRoute</method>
+                    </magehost_rewritefix>
+                </observers>
+            </controller_action_predispatch_cms_index_noroute>
+            <!-- for Magento pre SUPEE-7405 -->
+            <controller_action_predispatch_cms_index_noRoute>
+                <observers>
+                    <magehost_rewritefix>
+                        <type>singleton</type>
+                        <class>reachdigital_urlfixes/observer</class>
+                        <method>controllerActionPredispatchCmsIndexNoRoute</method>
+                    </magehost_rewritefix>
+                </observers>
+            </controller_action_predispatch_cms_index_noRoute>
+            <!-- /for Magento pre SUPEE-7405 -->
         </events>
     </global>
 </config>
