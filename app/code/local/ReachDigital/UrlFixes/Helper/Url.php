@@ -189,6 +189,64 @@ class ReachDigital_UrlFixes_Helper_Url extends Mage_Core_Helper_Abstract
         }
 
         return $urlKeysByStore;
+    }
 
+    /**
+     * Lookup current URL in fallback table, and get the current URL by matching on id_path or product/category IDs for
+     * system URLs.
+     *
+     * @param string $requestPath
+     * @param int $storeId
+     * @return Varien_Object|false
+     */
+    public function lookupFallbackRewrite($requestPath, $storeId)
+    {
+        $conn = Mage::getSingleton('core/resource')->getConnection('core_read');
+        $fallbackTable = $conn->getTableName('reachdigital_urlfixes_fallback');
+        $rewriteTable = Mage::getResourceModel('catalog/url')->getMainTable();
+
+        $bind = [
+            'request_path'  => $requestPath,
+            'store_id'      => (int) $storeId
+        ];
+
+        $select = $conn->select()
+            ->from([ 'fb' => $fallbackTable], ['fallback_id' => 'fb.url_rewrite_id'])
+            ->where('fb.store_id = :store_id')
+            ->where('fb.request_path = :request_path')
+            // Ensure best match (on both product and category) is first row
+            ->order('cr.category_id desc');
+
+        // Join current URL rewrites which are:
+        // - Direct URLs (is_system=1)
+        // - In the same store
+        // - For the same product and category, or only the same product
+        // - Not for the same request_path (this means URL is valid and caused 404 due to visibility
+        $select->joinLeft(
+            [ 'cr' => $rewriteTable ],
+            'cr.request_path != fb.request_path and cr.store_id = fb.store_id and cr.is_system = 1
+            and
+            (
+              (
+                (cr.category_id = fb.category_id or (fb.category_id is null and cr.category_id is null))
+                and
+                (cr.product_id = fb.product_id or (fb.product_id is null and cr.product_id is null))
+              )
+              or (fb.category_id is not null and cr.category_id is null and fb.product_id = cr.product_id)
+            )',
+            [ 'current_url' => 'cr.request_path' ]
+        );
+
+        $row = $conn->fetchRow($select, $bind);
+
+        if (!$row) {
+            return false;
+        }
+
+        $rewrite = new Varien_Object($row);
+
+        $conn->query("UPDATE $fallbackTable SET hits = hits + 1 WHERE url_rewrite_id = ?", [ $rewrite->getData('fallback_id') ]);
+
+        return $rewrite->getData('current_url');
     }
 }
