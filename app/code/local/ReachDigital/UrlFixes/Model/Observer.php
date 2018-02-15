@@ -93,4 +93,32 @@ class ReachDigital_UrlFixes_Model_Observer extends Mage_Core_Model_Abstract
             throw new Exception("Unable to save product; URL key conflicts with existing product(s): " . implode(", ", $skus));
         }
     }
+
+    /**
+     * 404 catcher based MageHost_RewriteFix. Redirects old URLs that resulted in 404 to the correct direct URL using
+     * fallback table. Does not redirect if URL is present in current rewrite table, as this means the URL is valid and
+     * caused a 404 due to product/category visibility.
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function controllerActionPredispatchCmsIndexNoRoute($observer)
+    {
+        /** @var $controllerAction Mage_Cms_IndexController */
+        $controllerAction = $observer->getControllerAction();
+        $request =  Mage::app()->getRequest();
+        $response = Mage::app()->getResponse();
+        $originalPath = $request->getOriginalPathInfo();
+        $baseUrl = rtrim( Mage::getBaseUrl(), '/' );
+
+        // Lookup in fallback table
+        $urlPath = trim($originalPath, '/');
+        $storeId = Mage::app()->getStore()->getId();
+        $redirectUrl = Mage::helper('reachdigital_urlfixes/url')->lookupFallbackRewrite($urlPath, $storeId);
+
+        if ($redirectUrl && $redirectUrl != $urlPath) {
+            $response->setRedirect($baseUrl . '/' . $redirectUrl, 301);
+            $response->sendHeaders();
+            $controllerAction->setFlag('', Mage_Core_Controller_Varien_Action::FLAG_NO_DISPATCH, true);
+        }
+    }
 }

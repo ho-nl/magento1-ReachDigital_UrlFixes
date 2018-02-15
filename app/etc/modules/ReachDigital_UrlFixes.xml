@@ -10,6 +10,9 @@
         <ReachDigital_UrlFixes>
             <active>true</active>
             <codePool>local</codePool>
+            <depends>
+                <MageHost_RewriteFix/>
+            </depends>
         </ReachDigital_UrlFixes>
     </modules>
 </config>
