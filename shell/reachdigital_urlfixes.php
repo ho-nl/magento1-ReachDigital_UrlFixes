@@ -34,6 +34,10 @@ class Reachdigital_UrlFixes_Shell extends Mage_Shell_Abstract
 
         $columns = "`url_rewrite_id`,`store_id`,`id_path`,`request_path`,`target_path`,`is_system`,`options`,`description`,`category_id`,`product_id`";
 
+        if ('y' !== readline("This will truncate the fallback table and fill it with the current rewrites, and can not be undone. Continue? ")) {
+            exit;
+        }
+
         echo "Truncating fallback table ($fallbackTable)\n";
         $conn->query("TRUNCATE TABLE `$fallbackTable`");
 
