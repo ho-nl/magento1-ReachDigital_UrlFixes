@@ -3,7 +3,7 @@
 class ReachDigital_UrlFixes_Helper_Url extends Mage_Core_Helper_Abstract
 {
     /**
-     * Get effective url keys for given product, or all products if $product is 0
+     * Get effective url keys for given product, or all products if no ID is given.
      *
      * @param int|Mage_Catalog_Model_Product $product
      * @return array
@@ -28,6 +28,12 @@ class ReachDigital_UrlFixes_Helper_Url extends Mage_Core_Helper_Abstract
         }
     }
 
+    /**
+     * Base select statement for getting all effective product URL key values
+     *
+     * @param Varien_Db_Adapter_Interface $db
+     * @return Varien_Db_Select
+     */
     public function getProductUrlKeysSelect(Varien_Db_Adapter_Interface $db): Varien_Db_Select
     {
         $productTable = Mage::getSingleton('core/resource')->getTableName('catalog/product');
@@ -37,7 +43,6 @@ class ReachDigital_UrlFixes_Helper_Url extends Mage_Core_Helper_Abstract
         $statusAttribute = Mage::getModel('eav/entity_attribute')->loadByCode(Mage_Catalog_Model_Product::ENTITY, 'status');
         $nameAttribute   = Mage::getModel('eav/entity_attribute')->loadByCode(Mage_Catalog_Model_Product::ENTITY, 'name');
 
-        // FIXME: Check that eav value ID is not NULL instead of eav value itself being null? Else we incorrectly miss store-level 'NULL' values
         return $db->select()
             ->from(
                 [ 'product' => $productTable ],
@@ -80,7 +85,7 @@ class ReachDigital_UrlFixes_Helper_Url extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * Fetch URL key values that conflict with given product's url keys.
+     * For the given $productId and $urlKeys, return all conflicting URL keys
      *
      * @param $productId int product ID
      * @param $urlKeys array of existing url keys for a product
@@ -133,22 +138,6 @@ class ReachDigital_UrlFixes_Helper_Url extends Mage_Core_Helper_Abstract
      */
     public function getAllProductUrlKeyConflicts(): array
     {
-        // Build array to easily check conflicts:
-        $example = [
-          // storeId => array of urlkeys
-          1 => [
-            // urlkeys => array of products using this url_key (in this store)
-            'some-url-key' => [
-              // productId => relevant product data
-              1919 => [
-                'sku'    => 'OSUI-0001',
-                'type'   => 'configurable',
-                'status' => '2',
-                'name'   => 'Shiny Suit',
-              ]
-            ]
-          ]
-        ];
         $urlKeysByStore = [];
 
         $urlKeys = $this->getProductUrlKeys();
@@ -201,8 +190,8 @@ class ReachDigital_UrlFixes_Helper_Url extends Mage_Core_Helper_Abstract
      */
     public function lookupFallbackRewrite($requestPath, $storeId)
     {
-        $conn = Mage::getSingleton('core/resource')->getConnection('core_read');
-        $fallbackTable = $conn->getTableName('reachdigital_urlfixes_fallback');
+        $db = Mage::getSingleton('core/resource')->getConnection('core_read');
+        $fallbackTable = $db->getTableName('reachdigital_urlfixes_fallback');
         $rewriteTable = Mage::getResourceModel('catalog/url')->getMainTable();
 
         $bind = [
@@ -210,7 +199,7 @@ class ReachDigital_UrlFixes_Helper_Url extends Mage_Core_Helper_Abstract
             'store_id'      => (int) $storeId
         ];
 
-        $select = $conn->select()
+        $select = $db->select()
             ->from([ 'fb' => $fallbackTable], ['fallback_id' => 'fb.url_rewrite_id'])
             ->where('fb.store_id = :store_id')
             ->where('fb.request_path = :request_path')
@@ -237,7 +226,7 @@ class ReachDigital_UrlFixes_Helper_Url extends Mage_Core_Helper_Abstract
             [ 'current_url' => 'cr.request_path' ]
         );
 
-        $row = $conn->fetchRow($select, $bind);
+        $row = $db->fetchRow($select, $bind);
 
         if (!$row) {
             return false;
@@ -245,7 +234,10 @@ class ReachDigital_UrlFixes_Helper_Url extends Mage_Core_Helper_Abstract
 
         $rewrite = new Varien_Object($row);
 
-        $conn->query("UPDATE $fallbackTable SET hits = hits + 1 WHERE url_rewrite_id = ?", [ $rewrite->getData('fallback_id') ]);
+        $db->update($fallbackTable,
+            [ 'hits' => new Zend_Db_Expr('hits + 1') ],
+            [ 'url_rewrite_id = ?' => $row['fallback_id'] ]
+        );
 
         return $rewrite->getData('current_url');
     }
