@@ -175,6 +175,9 @@ class ReachDigital_UrlFixes_Helper_Url extends Mage_Core_Helper_Abstract
                     unset($urlKeysByStore[$storeId][$urlKey]);
                 }
             }
+            if (!count($urlKeysByStore[$storeId])) {
+                unset($urlKeysByStore[$storeId]);
+            }
         }
 
         return $urlKeysByStore;
