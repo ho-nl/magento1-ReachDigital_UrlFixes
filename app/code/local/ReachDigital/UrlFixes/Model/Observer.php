@@ -82,16 +82,35 @@ class ReachDigital_UrlFixes_Model_Observer extends Mage_Core_Model_Abstract
             $updatedUrlKeys[] = $urlKey;
         }
 
+        // Check conflicts for new URL key value
         $conflicts = $helper->getProductUrlKeyConflicts($product->getId(), $updatedUrlKeys);
+        // Also check for existing URL key conflicts
+        $existingConflicts = $helper->getProductUrlKeyConflicts($product->getId(), $urlKeys);
 
         if (count($conflicts)) {
-            $skus = [];
-            foreach ($conflicts as $conflict) {
-                $skus[] = "${conflict['product_sku']} in store ${conflict['store_code']}";
-            }
-            // TODO: We could also just revert url_key value, add a session warning and continue saving? Test that reverting value doesn't trigger indexing.
-            throw new Exception("Unable to save product; URL key conflicts with existing product(s): " . implode(", ", $skus));
+
+            $product->setData('url_key', $product->getOrigData('url_key'));
+            Mage::getSingleton('adminhtml/session')->addWarning("New URL key value was reverted due to URL key conflict.");
         }
+
+        if ($existingConflicts = $this->_getConflictingProductsText($existingConflicts)) {
+            Mage::getSingleton('adminhtml/session')->addWarning(
+                "This product currently has conflicting URL keys with the following products:\n\n$existingConflicts");
+        }
+    }
+
+    protected function _getConflictingProductsText($conflicts)
+    {
+         if (!count($conflicts)) {
+             return false;
+         }
+
+        $skus = [];
+        foreach ($conflicts as $conflict) {
+            $skus[] = "${conflict['product_sku']} in store ${conflict['store_code']}";
+        }
+
+        return implode(', ', $skus);
     }
 
     /**
