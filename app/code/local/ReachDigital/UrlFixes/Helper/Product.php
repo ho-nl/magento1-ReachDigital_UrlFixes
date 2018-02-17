@@ -18,9 +18,9 @@ class ReachDigital_UrlFixes_Helper_Product extends Mage_Core_Helper_Abstract
      * Lookup product IDs for given SKU(s).
      *
      * @param $skus string|array
-     * @return array|int|boolean
+     * @return array
      */
-    public function getProductIdsFromSkus($skus)
+    public function getProductIdsFromSkus($skus) : array
     {
         $skus = is_array($skus) ? $skus : [$skus];
 
