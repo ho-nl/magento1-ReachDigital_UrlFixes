@@ -75,7 +75,8 @@ class Reachdigital_UrlFixes_Shell extends Mage_Shell_Abstract
         echo "Doing full reindex of catalog URL rewrites.\n";
         Mage::getModel('catalog/indexer_url')->reindexAll();
 
-        echo "Done!\n";
+        echo "Done! You should now fully reindex flat catalog tables (if used) and possibly other indexes added by\n";
+        echo "third party modules.\n";
     }
 
     public function regenerateRewriteTableActionHelp()

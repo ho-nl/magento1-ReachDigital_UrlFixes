@@ -15,12 +15,12 @@ mechanism, allowing complete sanitation of product URLs while ensure old indexed
 Features:
 
 - Tested on a international multi-store webshop, with 10+ stores and a complex category structure
-- Prevents new URL conflicts, warns about existing conflicts
+- Prevents new URL conflicts when modifying products and warns about existing conflicts
 - Prevents URL key conflicts due to product duplication
-- Allows completely sanitizing URL keys without risking a negative SEO impact  
-- Tools diagnose and analyze URL key conflicts 
+- Allows complete sanitation of URL keys without risking a negative SEO impact  
+- Tools to detect and analyze URL key conflicts 
 - Helper methods to assist with automated sanitation of product URL keys
-- Dependency on MageHost_RewriteFix to fix core bug responsible for redundant rewrites being created at every reindex 
+- Depends on MageHost_RewriteFix to fix core bug responsible for redundant rewrites being created at every reindex 
 
 This module does not change the behavior of the catalog URL indexer (other than the bug fix applied by
 MageHost_RewriteFix).
@@ -52,7 +52,7 @@ the redirect, the fallback table can safely be truncated.
 
 ## Installation guide
 
-Warning: this module may contain bugs! It has not been tested incombination with other modules that change the catalog
+Warning: this module may contain bugs! It has not been tested in combination with other modules that change the catalog
 URL index behavior other than MageHost_RewriteFix. Thoroughly test all below steps in non-production environment, and
 have full backups at every step of the way. 
 
@@ -97,8 +97,9 @@ After all conflicts have been resolved, a new clean rewrite table can be generat
 
 ```
 php reachdigital_urlfixes.php -action regenerateRewriteTable
-
 ```
+
+You may also need to refresh flat catalog indexes and possible other indexes (for example Manadev SEO URL index)
 
 ### Step 5 - Clean fallback table
 
