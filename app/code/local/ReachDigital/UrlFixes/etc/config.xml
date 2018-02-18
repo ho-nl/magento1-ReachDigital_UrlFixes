@@ -62,6 +62,15 @@
                     </reachdigital_urlfixes_check_url_conflicts>
                 </observers>
             </catalog_product_save_before>
+            <catalog_product_edit_action>
+                <observers>
+                    <reachdigital_urlfixes_check_url_conflicts>
+                        <type>singleton</type>
+                        <class>ReachDigital_UrlFixes_Model_Observer</class>
+                        <method>checkProductUrlExistingConflicts</method>
+                    </reachdigital_urlfixes_check_url_conflicts>
+                </observers>
+            </catalog_product_edit_action>
 
             <!-- Intentionally overriding MageHost's observer so we can extend the 404 catcher logic -->
             <controller_action_predispatch_cms_index_noroute>

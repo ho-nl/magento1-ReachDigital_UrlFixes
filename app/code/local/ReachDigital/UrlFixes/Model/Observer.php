@@ -42,9 +42,8 @@ class ReachDigital_UrlFixes_Model_Observer extends Mage_Core_Model_Abstract
     }
 
     /**
-     * Check if we can save product without getting URL rewrite conflicts
-     * - Check for other products with conflicting url_key values (for any store)
-     * - TODO: Check existing rewrites in rewrite table? Not important if existing rewrites are already sanitized
+     * Check if we can save product without getting URL rewrite conflicts. If not, revert URL key value and show
+     * warning.
      *
      * @event catalog_product_save_before
      * @param Varien_Event_Observer $observer
@@ -84,18 +83,35 @@ class ReachDigital_UrlFixes_Model_Observer extends Mage_Core_Model_Abstract
 
         // Check conflicts for new URL key value
         $conflicts = $helper->getProductUrlKeyConflicts($product->getId(), $updatedUrlKeys);
-        // Also check for existing URL key conflicts
-        $existingConflicts = $helper->getProductUrlKeyConflicts($product->getId(), $urlKeys);
 
         if (count($conflicts)) {
 
             $product->setData('url_key', $product->getOrigData('url_key'));
-            Mage::getSingleton('adminhtml/session')->addWarning("New URL key value was reverted due to URL key conflict.");
+            $conflicts = $this->_getConflictingProductsText($conflicts);
+            Mage::getSingleton('adminhtml/session')->addWarning(nl2br(
+                "New URL key value was reverted as it would conflicts with the following products:\n\n$conflicts"));
         }
+    }
+
+    /**
+     * Check if product being modified has exiting URL key conflicts, and warn if so.
+     *
+     * @event catalog_product_edit_action
+     * @param Varien_Event_Observer $observer
+     * @throws Exception if new url_key conflicts with existing url keys.
+     */
+    public function checkProductUrlExistingConflicts(Varien_Event_Observer $observer)
+    {
+        /** @var Mage_Catalog_Model_Product $product */
+        $product = $observer->getProduct();
+        $helper = Mage::helper('reachdigital_urlfixes/url');
+
+        $urlKeys = $helper->getProductUrlKeys($product);
+        $existingConflicts = $helper->getProductUrlKeyConflicts($product->getId(), $urlKeys);
 
         if ($existingConflicts = $this->_getConflictingProductsText($existingConflicts)) {
-            Mage::getSingleton('adminhtml/session')->addWarning(
-                "This product currently has conflicting URL keys with the following products:\n\n$existingConflicts");
+            Mage::getSingleton('adminhtml/session')->addWarning(nl2br(
+                "This product currently has conflicting URL keys with the following products:\n\n$existingConflicts"));
         }
     }
 
@@ -107,10 +123,27 @@ class ReachDigital_UrlFixes_Model_Observer extends Mage_Core_Model_Abstract
 
         $skus = [];
         foreach ($conflicts as $conflict) {
-            $skus[] = "${conflict['product_sku']} in store ${conflict['store_code']}";
+            $sku = $conflict['product_sku'];
+            $store = $conflict['store_code'];
+            if (!isset($skus[$sku])) {
+                $skus[$sku] = [];
+            }
+            if (!is_null($conflict['store_urlkey'])) {
+                $skus[$sku][] = "in store $store";
+            } else {
+                $skus[$sku][] = "in store $store, using default value";
+            }
         }
 
-        return implode(', ', $skus);
+        $text = "";
+        foreach ($skus as $sku => $stores) {
+            $text .= "$sku:\n";
+            foreach ($stores as $store) {
+                $text .= "&nbsp;&nbsp;$store\n";
+            }
+        }
+
+        return $text;
     }
 
     /**
