@@ -8,45 +8,79 @@ class Reachdigital_UrlFixes_Shell extends Mage_Shell_Abstract
     {
         $db = Mage::getSingleton('core/resource')->getConnection('core_read');
         $fallbackTable = $db->getTableName('reachdigital_urlfixes_fallback');
+        $storeTable    = $db->getTableName('core_store');
+        $rewriteTable  = $db->getTableName('core_url_rewrite');
+        $productTable  = $db->getTableName('catalog_product_entity');
 
-        $storeId = $this->getArg('store');
+        $attrStatus       = Mage::getSingleton('eav/config')->getAttribute('catalog_product', 'status');
+        $attrVisibility   = Mage::getSingleton('eav/config')->getAttribute('catalog_product', 'visibility');
+        $attrName         = Mage::getSingleton('eav/config')->getAttribute('catalog_product', 'name');
 
-        if (!$storeId) {
-            echo "Must specify store ID using -store option\n";
-            exit(0);
+        $tableStatus      = $attrStatus->getBackendTable();
+        $tableVisibility  = $attrVisibility->getBackendTable();
+        $tableName        = $attrName->getBackendTable();
+
+        $attrIdStatus     = $attrStatus->getAttributeId();
+        $attrIdVisibility = $attrVisibility->getAttributeId();
+        $attrIdName       = $attrName->getAttributeId();
+
+        $storeCondition       = $this->getArg('store')   ? " and fb.store_id in ".$this->getArg('store')." " : "" ;
+        $systemOnlyCondition  = $this->getArg('system')  ? " and fb.is_system = 1 " : "";
+        $visibleOnlyCondition = $this->getArg('visible') ? " and if (pvis.value_id    is not null, pvis.value,    pdvis.value)    != 1 " : "";
+        $enabledOnlyCondition = $this->getArg('enabled') ? " and if (pstatus.value_id is not null, pstatus.value, pdstatus.value) != 2 " : "";
+
+        if ($this->getArg('csv')) {
+            $separator = "\t";
+        } else {
+            $separator = ",";
         }
+        // Get all rewrites in fallback table that are not also in the current rewrite table, join with product info
+        // TODO: rewrite using Zend_Db api
+        $query = $db->query("
+            select
+                fb.store_id,
+                store.name as store_name,
+                p.sku as product,
+                p.type_id as product_type,
+                if(pname.value_id is not null, pname.value, pdname.value) as product_name,
+                if(p.entity_id is not null, if (if (pstatus.value_id is not null, pstatus.value, pdstatus.value) = 1, 'enabled', 'disabled'), null) as product_status,
+                if(p.entity_id is not null, if (if (pvis.value_id is not null, pvis.value, pdvis.value) != 1, 'visible', 'not visible'), null) as product_visibility,
+                fb.request_path as old_url
+            from `$fallbackTable` as fb
+            left join `$storeTable` as store on store.store_id = fb.store_id
+            left join `$rewriteTable` as cur on cur.store_id = fb.store_id and cur.request_path = fb.request_path
+            left join `$productTable` as p on p.entity_id = fb.product_id
+            
+            left join `$tableName`       as pdname   on pdname.attribute_id   = $attrIdName       and pdname.entity_id   = fb.product_id and pdname.store_id   = 0
+            left join `$tableStatus`     as pdstatus on pdstatus.attribute_id = $attrIdStatus     and pdstatus.entity_id = fb.product_id and pdstatus.store_id = 0
+            left join `$tableVisibility` as pdvis    on pdvis.attribute_id    = $attrIdVisibility and pdvis.entity_id    = fb.product_id and pdvis.store_id    = 0
+            left join `$tableName`       as pname    on pname.attribute_id    = $attrIdName       and pname.entity_id    = fb.product_id and pname.store_id    = fb.store_id
+            left join `$tableStatus`     as pstatus  on pstatus.attribute_id  = $attrIdStatus     and pstatus.entity_id  = fb.product_id and pstatus.store_id  = fb.store_id
+            left join `$tableVisibility` as pvis     on pvis.attribute_id     = $attrIdVisibility and pvis.entity_id     = fb.product_id and pvis.store_id     = fb.store_id
+            where
+                cur.url_rewrite_id is null $storeCondition $systemOnlyCondition $visibleOnlyCondition $enabledOnlyCondition
+            order by fb.store_id, p.sku, fb.request_path
+        ");
 
-        $format = false;
-        if ($this->getArg('tsv')) {
-            $format = "%s\t%s\n";
-        } elseif ($this->getArg('csv')) {
-            $format = "%s,%s\n";
-        }
-        // Get all rewrites in fallback table that are not also in the current rewrite table
-        $query = $db->query(
-            "select fb.store_id, fb.request_path from `$fallbackTable` as fb
-            left join core_url_rewrite as cur on cur.store_id = fb.store_id and cur.request_path = fb.request_path
-            where cur.url_rewrite_id is null and fb.store_id = $storeId
-            order by fb.store_id, fb.request_path");
+        while ($row = $query->fetch()) {
 
-        while ($url = $query->fetch()) {
-            $oldUrl = $url['request_path'];
-            $storeId = $url['store_id'];
-            $newUrl = Mage::helper('reachdigital_urlfixes/url')->lookupFallbackRewrite($oldUrl, $storeId);
-
-            if ($format) {
-                printf($format, $oldUrl, $newUrl);
-            } elseif ($newUrl) {
-                echo "$oldUrl redirects to $newUrl\n";
-            } else {
-                echo "$oldUrl not found\n";
-            }
+            $newUrl = Mage::helper('reachdigital_urlfixes/url')->lookupFallbackRewrite($row['old_url'], $row['store_id']);
+            $row['new_url'] = $newUrl ? $newUrl : "";
+            echo implode($separator, $row)."\n";
         }
     }
 
     public function dumpFallbackUrlMappingActionHelp()
     {
-        return ["Dumps a list of fallback URLs that no longer exist and the new URL it would redirect to, for the specified store (use -store <id>)"];
+        return [
+            "Dumps a list of fallback URLs that no longer exist and the new URL it would redirect to, along with ",
+            "product name, store status, store visibility information. Options for filtering:",
+            "",
+            "  -store    (only show mapping for the specified store ID(s))",
+            "  -system   (only show mapping for old is_system URLs)",
+            "  -enabled  (only show mapping if related product is enabled for the URLs' store)",
+            "  -visible  (only show mapping if related product is visible in the URLs' store)",
+        ];
     }
 
     public function fillFallbackTableAction()
