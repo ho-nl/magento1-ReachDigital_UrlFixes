@@ -9,11 +9,24 @@ class Reachdigital_UrlFixes_Shell extends Mage_Shell_Abstract
         $db = Mage::getSingleton('core/resource')->getConnection('core_read');
         $fallbackTable = $db->getTableName('reachdigital_urlfixes_fallback');
 
+        $storeId = $this->getArg('store');
+
+        if (!$storeId) {
+            echo "Must specify store ID using -store option\n";
+            exit(0);
+        }
+
+        $format = false;
+        if ($this->getArg('tsv')) {
+            $format = "%s\t%s\n";
+        } elseif ($this->getArg('csv')) {
+            $format = "%s,%s\n";
+        }
         // Get all rewrites in fallback table that are not also in the current rewrite table
         $query = $db->query(
             "select fb.store_id, fb.request_path from `$fallbackTable` as fb
             left join core_url_rewrite as cur on cur.store_id = fb.store_id and cur.request_path = fb.request_path
-            where cur.url_rewrite_id is null
+            where cur.url_rewrite_id is null and fb.store_id = $storeId
             order by fb.store_id, fb.request_path");
 
         while ($url = $query->fetch()) {
@@ -21,17 +34,19 @@ class Reachdigital_UrlFixes_Shell extends Mage_Shell_Abstract
             $storeId = $url['store_id'];
             $newUrl = Mage::helper('reachdigital_urlfixes/url')->lookupFallbackRewrite($oldUrl, $storeId);
 
-            if ($newUrl) {
-                echo "store $storeId, fallback $oldUrl, target $newUrl\n";
+            if ($format) {
+                printf($format, $oldUrl, $newUrl);
+            } elseif ($newUrl) {
+                echo "$oldUrl redirects to $newUrl\n";
             } else {
-                echo "store $storeId, fallback $oldUrl, target not found\n";
+                echo "$oldUrl not found\n";
             }
         }
     }
 
     public function dumpFallbackUrlMappingActionHelp()
     {
-        return ["Dump list of fallback URLs that no longer exist and the target URL (if any) they would be mapped to."];
+        return ["Dumps a list of fallback URLs that no longer exist and the new URL it would redirect to, for the specified store (use -store <id>)"];
     }
 
     public function fillFallbackTableAction()
