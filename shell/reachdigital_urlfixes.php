@@ -24,7 +24,7 @@ class Reachdigital_UrlFixes_Shell extends Mage_Shell_Abstract
         $attrIdVisibility = $attrVisibility->getAttributeId();
         $attrIdName       = $attrName->getAttributeId();
 
-        $storeCondition       = $this->getArg('store')   ? " and fb.store_id in ".$this->getArg('store')." " : "" ;
+        $storeCondition       = $this->getArg('store')   ? " and fb.store_id in (".$this->getArg('store').") " : "" ;
         $systemOnlyCondition  = $this->getArg('system')  ? " and fb.is_system = 1 " : "";
         $visibleOnlyCondition = $this->getArg('visible') ? " and if (pvis.value_id    is not null, pvis.value,    pdvis.value)    != 1 " : "";
         $enabledOnlyCondition = $this->getArg('enabled') ? " and if (pstatus.value_id is not null, pstatus.value, pdstatus.value) != 2 " : "";
