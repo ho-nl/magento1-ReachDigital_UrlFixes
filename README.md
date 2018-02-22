@@ -101,7 +101,23 @@ php reachdigital_urlfixes.php -action regenerateRewriteTable
 
 You may also need to refresh flat catalog indexes and possible other indexes (for example Manadev SEO URL index)
 
-### Step 5 - Clean fallback table
+### Step 5 - Generate overview of old URLs in fallback table
+
+For SEO purposes you might want to check and validate how old URLs get redirected:
+
+```
+reachdigital_urlfixes.php -action dumpFallbackUrlMapping -store 1,2,3,... -system -enabled -visible
+```
+
+This lists all URLs in the fallback table that are not in the current rewrite table and would get redirected to the
+correct URL of the product they were previously linked to. The ouput includes the new redirect target URL and current
+product information.
+
+The `-system` flag only fallback URLs that used to be 'system' URLs (the actual non-redirecting URL of the
+product/category). The `-enabled` and `-visible` options filter out URLs for disabled and non visible products.
+
+
+### Step 6 - Clean fallback table (optional)
 
 Eventually, the fallback table can be cleaned once crawlers pick up the redirects. Once you are sure the old URLs are no
 longer being accessed, you can truncate the fallback table. Whenever a fallback URL is hit, the 'hits' column is
