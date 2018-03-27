@@ -107,6 +107,7 @@ class ReachDigital_UrlFixes_Helper_Product extends Mage_Core_Helper_Abstract
             $attribute->getBackendTable(),
             [
                 'store_id' => $storeId,
+                'entity_type_id' => $attribute->getEntityTypeId(),
                 'entity_id' => $productId,
                 'attribute_id' => $attribute->getAttributeId(),
                 'value' => $value
@@ -132,6 +133,7 @@ class ReachDigital_UrlFixes_Helper_Product extends Mage_Core_Helper_Abstract
         $select = $db->select()
             ->from($attribute->getBackendTable(), 'value')
             ->where('store_id = ?', $storeId)
+            ->where('entity_type_id = ?', $attribute->getEntityTypeId())
             ->where('entity_id = ?', $productId)
             ->where('attribute_id = ?', $attribute->getAttributeId());
 
